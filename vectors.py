@@ -19,6 +19,13 @@ class Vector2:
     def unit_vector(self):
         magnitude = self.magnitude()
         return Vector2(self.x/magnitude, self.y/magnitude)
+    def rotate(self, angle):
+        px = self.x
+        py = self.y
+
+        qx = math.cos(angle) * px - math.sin(angle) * py
+        qy = math.sin(angle) * px + math.cos(angle) * py
+        return Vector2(qx, qy)
     def correction_to(self, ideal):
         # The in-game axes are left handed, so use -x
         current_in_radians = math.atan2(self.y, -self.x)
@@ -36,7 +43,7 @@ class Vector2:
         return correction
     def get_angle(self):
         if self.x == 0: self.x = 0.0000000000000001
-        return math.degrees(math.atan2(self.y, self.x))
+        return math.atan2(self.y, self.x)
     def magnitude(self): 
         return (self.x ** 2 + self.y ** 2) ** 0.5
 
@@ -50,17 +57,22 @@ class Vector3:
             self.x = float(x)
             self.y = float(y)
             self.z = float(z)
+        elif x == 'angle':
+            # y is the angle in this case
+            self.x = math.sin(y)
+            self.y = math.cos(y)
+            self.z = 0
     
     def unit_vector(self):
         magnitude = self.magnitude()
         return Vector3(self.x/magnitude, self.y/magnitude, self.z/magnitude)
-    def get_angle(self, wich):
+    def angle(self, wich):
         if wich == 'x': return math.atan2(math.sqrt(self.y**2+self.z**2),self.x)
         if wich == 'y': return math.atan2(math.sqrt(self.z**2+self.x**2),self.y)
         if wich == 'z': return math.atan2(math.sqrt(self.x**2+self.y**2),self.z)-math.pi/2
     def get_array(self):
         return [self.x, self.y, self.z]
-    def get_2d(self):
+    def to_2d(self):
         return Vector2(self.x, self.y)
     def magnitude(self):
         return (self.x ** 2 + self.y ** 2 + self.z ** 2) ** 0.5
@@ -72,16 +84,21 @@ class Vector3:
         return Vector3(self.x * val.x, self.y * val.y, self.z * val.z)
     def __sub__(self, val):
         return Vector3(self.x - val.x, self.y - val.y, self.z - val.z)
-    def difference(val1, val2):
-        return Vector3(val1.x - val2.x, val1.y - val2.y, val1.z - val2.z)
     def draw(self, agent, pos, color=[0,0,0]):
         color = more_colors(agent, color)
         agent.renderer.draw_line_3d(pos.get_array(), (pos+self).get_array(), agent.renderer.create_color(255, color[0], color[1], color[2]))
+    def string(self):
+        return 'X:'+str(round(self.x, 2))+' Y:'+str(round(self.y, 2))+' Z:'+str(round(self.z, 2))
     def multiply(self, val):
         return Vector3(self.x*val, self.y*val, self.z*val)
     def draw_to(self, agent, to, color=[0,0,0]):
         color = more_colors(agent, color)
         agent.renderer.draw_line_3d(self.get_array(), to.get_array(), agent.renderer.create_color(255, color[0], color[1], color[2]))
+    def change(self, what, to):
+        if what == 'x': self.x = to
+        if what == 'y': self.y = to
+        if what == 'z': self.z = to
+        return self
     
 
 def more_colors(agent, color):
