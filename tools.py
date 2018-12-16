@@ -34,10 +34,12 @@ def time_needed_for_car(agent, car_to):
     if speed == 0: speed = 0.00000000000000001
     duration = length/speed
     return duration
-def predict_time_needed_for_car(self, packet, car_from, car_to):
-    difference = Vector2(car_from.x-car_to.x, car_from.y-car_to.y)
+
+def predict_time_needed_for_car(agent, car_to):
+    car = agent.car
+    difference = car.pos - car_to
     length = difference.magnitude()
-    speed = 1400
+    speed = 1500
     if speed == 0: speed = 0.00000000000000001
     duration = length/speed
     return duration

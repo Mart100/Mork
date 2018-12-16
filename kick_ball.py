@@ -32,7 +32,7 @@ class kick_ball:
         if kick_ball.prediction_timer < -0.1:
             agent.car_status = 'none'
             kick_ball.in_position = False
-            time = kick_ball.predict_when_ball_hit(agent, packet)
+            time = kick_ball.predict_when_ball_hit(agent)
             kick_ball.prediction_timer = time
             kick_ball.ball_prediction = ball.prediction[int(time*60)]
         kick_ball.correction_timer = kick_ball.when_ball_hit_correction(agent)
@@ -62,7 +62,7 @@ class kick_ball:
         # If car not close enough to ideal and car not close to idealLine. Go there
         if Vector2(ideal_car_location.x-car_location.x, ideal_car_location.y-car_location.y).magnitude() > 1000 and not car_inline_bool and not kick_ball.in_position:
             go_to = ideal_car_location
-            plus = -difference_angle_car_ideal/40
+            #plus = -difference_angle_car_ideal/(car_to_ball_magnitude/200)
             # double jump if on ground and straight and going good direction and far away
             far_away_enough = Vector2(car_location.x-ideal_car_location.x, car_location.y-ideal_car_location.y).magnitude() > 1000
             # draw ideal location
@@ -73,7 +73,8 @@ class kick_ball:
             kick_ball.in_position = True
             # predict ball location and go there
             go_to = ball_location
-            plus = -difference_angle_car_ideal/(car_to_ball_magnitude/100)
+            
+            plus = -difference_angle_car_ideal/(car_to_ball_magnitude/200)
             #if car_to_ball_magnitude_2d > 2000: plus = -difference_angle_car_ideal/40
             # boost
             too_slow = kick_ball.correction_timer > kick_ball.prediction_timer+0.01
@@ -133,18 +134,18 @@ class kick_ball:
             ideal_car_location = ideal_car_location_relative + ball_location
         return ideal_car_location
 
-    def predict_when_ball_hit(agent, packet):
+    def predict_when_ball_hit(agent):
         car = agent.car
         ball = agent.ball
 
         sec = 0
         loop = True
         while loop:
-            sec += 0.01+sec/12
+            sec += 0.01+sec/24
             ball_location = ball.prediction[round(sec/60)].pos
-            car_duration = predict_time_needed_for_car(agent, packet, car.pos, ball_location)
+            car_duration = predict_time_needed_for_car(agent, ball_location)
             aerial = ball_location.z > 1000 and car.boost > 60
-            ground_shot = ball_location.z < 150
+            ground_shot = ball_location.z < 300
             in_time = car_duration < sec
             if in_time and (ground_shot or aerial): loop = False
             if sec >= 5.5: loop = False

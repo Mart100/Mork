@@ -25,22 +25,23 @@ class clear_ball:
         if clear_ball.prediction_timer < -0.1:
             agent.car_status = 'none'
             clear_ball.in_position = False
-            time = clear_ball.predict_when_ball_hit(agent, packet)
+            time = clear_ball.predict_when_ball_hit(agent)
             clear_ball.prediction_timer = time
             clear_ball.ball_prediction = ball.prediction[int(time*60)]
         clear_ball.correction_timer = clear_ball.when_ball_hit_correction(agent)-clear_ball.prediction_timer
         clear_ball.ball_prediction = ball.prediction[int(cap_num(clear_ball.prediction_timer*60, 0, 1e9))]
 
         # if correction is bigger than abs 1. recalculate hit prediction
-        if abs(clear_ball.correction_timer) > 1: clear_ball.prediction_timer = -1
+        if abs(clear_ball.predict_when_ball_hit(agent)-clear_ball.prediction_timer) > 1: clear_ball.prediction_timer = -1
 
         ball_pos = clear_ball.ball_prediction.pos
         car_to_ball_magnitude_2d = (car.pos.to_2d() - ball_pos.to_2d()).magnitude()
-        ideal_car_angle = clear_ball.get_ideal_car_angle(agent)
-        ideal_car_pos = Vector3('angle', clear_ball.get_ideal_car_angle(agent))
+        ideal_car_pos = clear_ball.get_ideal_car_angle(agent)
+        ideal_car_angle = ideal_car_pos.to_2d().get_angle()
         car_to_ball_angle = (ball_pos - car.pos).to_2d().get_angle()
         difference_angle_car_ideal = difference_angles(ideal_car_angle, car_to_ball_angle)
         car_inline_with_goal = ideal_car_angle < math.pi*2 - clear_ball.get_goal_angle(agent)
+        car_inline_with_target = difference_angles(get_car_facing_vector(car).get_angle(), ball_pos.to_2d().get_angle()) < 10
         car_on_ground = (car.pos.z < 17.5)
         no_jumps = (agent.jumps == [])
         go_to = ball_pos
@@ -55,11 +56,11 @@ class clear_ball:
         agent.renderer.draw_string_3d(ball_pos.get_array(), 2, 2, ball_pos.string(), white(agent))
 
         # aim towards ideal car angle. The closer to the ball
-        plus = -ideal_car_angle/(car_to_ball_magnitude_2d/100)
+        plus = -ideal_car_angle/(car_to_ball_magnitude_2d/200)
 
         # Use boost. If inline. on the ground. and correction
         too_slow = clear_ball.correction_timer > 0.05
-        if no_jumps and car_on_ground and too_slow:
+        if no_jumps and car_on_ground and too_slow and car_inline_with_target:
             agent.controller_state.boost = True
 
         # double jump if close to the ball, inline, car on ground
@@ -93,10 +94,10 @@ class clear_ball:
     def get_ideal_car_angle(agent):
         ball_pos = clear_ball.ball_prediction.pos
         own_goal = agent.info.own_goal
-        ball_to_goal_vector = agent.info.own_goal - ball_pos
-        return ball_to_goal_vector.to_2d().multiply(-1).get_angle()
+        ball_to_goal_vector = own_goal - ball_pos
+        return ball_to_goal_vector
 
-    def predict_when_ball_hit(agent, packet):
+    def predict_when_ball_hit(agent):
         car = agent.car
         ball = agent.ball
         sec = 0
@@ -104,7 +105,7 @@ class clear_ball:
         while loop:
             sec += 0.01+sec/12
             ball_location = ball.prediction[round(sec/60)].pos
-            car_duration = predict_time_needed_for_car(agent, packet, car.pos, ball_location)
+            car_duration = predict_time_needed_for_car(agent, ball_location)
 
             aerial = ball_location.z > 1000 and car.boost > 60
             ground_shot = ball_location.z < 150
